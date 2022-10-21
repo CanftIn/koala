@@ -9,3 +9,12 @@ add_includedirs("./include")
 target("koala")
     set_kind("binary")
     add_files("src/*.cc")
+
+target("koala_test")
+    set_kind("binary")
+    add_files("test/*.cc")
+
+target("koala_experimental")
+    set_kind("binary")
+    add_includedirs("./experimental")
+    add_files("experimental/*.cc")
