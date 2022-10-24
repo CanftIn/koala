@@ -39,6 +39,31 @@ namespace koala {
     return t;
   }
 
+  struct StrEqual {
+    [[nodiscard]] bool operator () (const std::string& lhs, const std::string& rhs) const noexcept {
+      return lhs == rhs;
+    }
+    template <typename LHS, typename RHS>
+    [[nodiscard]] constexpr bool operator () (const LHS& lhs, const RHS& rhs) const noexcept {
+      return std::equal(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+    }
+  };
+
+
+  template <typename Container, typename... T>
+  [[nodiscard]] constexpr auto make_container(T&&... t) {
+    Container c;
+    c.reserve(sizeof...(t));
+    (c.push_back(std::forward<T>(t)), ...);
+    return c;
+  }
+
+  template <typename... T>
+  [[nodiscard]] auto make_vector(T&&... t)
+    -> std::vector<std::common_type_t<std::decay_t<T>...>> {
+    using container_type = std::vector<std::common_type_t<std::decay_t<T>...>>;
+    return make_container<container_type>(std::forward<T>(t)...);
+  }
 } // namespace koala
 
 #endif
