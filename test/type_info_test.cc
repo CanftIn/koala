@@ -1,5 +1,6 @@
 #include <iostream>
 #include <typeinfo>
+#include <gtest/gtest.h>
 
 #include "koala/type_info.hpp"
  
@@ -55,7 +56,17 @@ void TypeInfo_Test() {
   } 
 }
 
-int main() {
+void test() {
   BareType_Test();
   TypeInfo_Test();
+}
+
+
+TEST(TinyTest, null) {
+  EXPECT_EQ(1, 1);
+}
+
+int main(int argc, char **argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
