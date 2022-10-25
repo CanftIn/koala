@@ -10,6 +10,7 @@ set_config("ld", "clang++")
 add_rules("mode.debug", "mode.release")
 
 add_includedirs("./include")
+add_includedirs("./experimental")
 
 add_requires("gtest")
 
