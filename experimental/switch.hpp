@@ -60,7 +60,8 @@ struct Switch {
     else if (_default) return _default(args...);
     return Ret();
   }
-  template <>
+  
+  //template <>
   void Call(const Key& k) const {
     if (_funcs.find(k) != _funcs.end()) return _funcs.find(k)->second();
     else if (_default) return _default();
