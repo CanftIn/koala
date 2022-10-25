@@ -1,3 +1,3 @@
 Koala
 
-Koala is an embedding language in cpp.
+Koala is an embedded language in cpp. Just a exercise.
