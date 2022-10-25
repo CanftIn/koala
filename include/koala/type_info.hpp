@@ -90,6 +90,22 @@ namespace koala {
     static const int is_undef_flag = 5;
     unsigned int _flags = (1 << is_undef_flag);
   };
+
+  namespace detail {
+    template <typename T>
+    struct GetTypeInfo {
+      constexpr static TypeInfo get() noexcept {
+        return TypeInfo(std::is_const_v<typename std::remove_pointer_t<typename std::remove_reference_t<T>>>,
+                        std::is_reference_v<T>,
+                        std::is_pointer_v<T>,
+                        std::is_void_v<T>,
+                        (std::is_arithmetic_v<T> || std::is_arithmetic_v<typename std::remove_reference_t<T>>) &&
+                         !std::is_same_v<typename std::remove_const_t<typename std::remove_reference_t<T>>, bool>,
+                        &typeid(T),
+                        &typeid(BareType_t<T>));
+      }
+    };
+  } // namespace detail
 } // namespace koala
 
 #endif
