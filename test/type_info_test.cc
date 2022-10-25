@@ -1,5 +1,6 @@
 #include <iostream>
 #include <typeinfo>
+#include <string>
 #include <gtest/gtest.h>
 
 #include "koala/type_info.hpp"
@@ -62,8 +63,27 @@ void test() {
 }
 
 
-TEST(TinyTest, null) {
-  EXPECT_EQ(1, 1);
+TEST(TypeInfo, base) {
+  test();
+}
+
+TEST(TypeInfo, GetTypeInfo) {
+  using namespace koala;
+  using namespace koala::detail;
+
+  class A {
+  };
+
+  TypeInfo ti = GetTypeInfo<int>::get();
+  TypeInfo ti_A = GetTypeInfo<A>::get();
+  EXPECT_EQ(ti.is_arithmetic(), true);
+  EXPECT_EQ(ti_A.is_arithmetic(), false);
+  EXPECT_EQ(std::string(ti_A.name()).find("GetTypeInfo") != std::string::npos, true);
+
+  std::shared_ptr<A> a_ptr = std::make_shared<A>();
+  TypeInfo ti_a_ptr = GetTypeInfo<std::shared_ptr<A>>::get();
+  EXPECT_EQ(std::string(ti_a_ptr.name()).find("GetTypeInfo") != std::string::npos, true);
+  EXPECT_EQ(std::string(ti_a_ptr.bare_name()).find("GetTypeInfo") != std::string::npos, true);
 }
 
 int main(int argc, char **argv) {

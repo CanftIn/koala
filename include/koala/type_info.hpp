@@ -105,6 +105,38 @@ namespace koala {
                         &typeid(BareType_t<T>));
       }
     };
+
+    template <typename T>
+    struct GetTypeInfo<std::shared_ptr<T>> {
+      constexpr static TypeInfo get() noexcept {
+        return TypeInfo(std::is_const_v<T>,
+                        std::is_reference_v<T>,
+                        std::is_pointer_v<T>,
+                        std::is_void_v<T>,
+                        std::is_arithmetic_v<T> &&
+                        !std::is_same_v<typename std::remove_const_t<typename std::remove_reference_t<T>>, bool>,
+                        &typeid(std::shared_ptr<T>),
+                        &typeid(BareType_t<T>));
+      }
+    };
+
+    template <typename T>
+    struct GetTypeInfo<std::shared_ptr<T>&> : GetTypeInfo<std::shared_ptr<T>>
+    { };
+
+    template <typename T>
+    struct GetTypeInfo<const std::shared_ptr<T>&> {
+      constexpr static TypeInfo get() noexcept {
+        return TypeInfo(std::is_const_v<T>,
+                        std::is_reference_v<T>,
+                        std::is_pointer_v<T>,
+                        std::is_void_v<T>,
+                        std::is_arithmetic_v<T> &&
+                        !std::is_same_v<typename std::remove_const_t<typename std::remove_reference_t<T>>, bool>,
+                        &typeid(const std::shared_ptr<T>),
+                        &typeid(BareType_t<T>));
+      }
+    };
   } // namespace detail
 } // namespace koala
 
