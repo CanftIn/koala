@@ -1,5 +1,5 @@
-#ifndef BOXED_VALUE_HPP__
-#define BOXED_VALUE_HPP__
+#ifndef KOALA_BOXED_VALUE_HPP__
+#define KOALA_BOXED_VALUE_HPP__
 
 #include <map>
 #include <any>
