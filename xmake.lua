@@ -22,9 +22,6 @@ target("koala")
 --     set_kind("binary")
 --     add_files("test/*.cc")
 
-target("koala_experimental")
-    set_kind("binary")
-    add_includedirs("./experimental")
-    add_files("experimental/*.cc")
 
 add_subdirs('test')
+add_subdirs('experimental')
