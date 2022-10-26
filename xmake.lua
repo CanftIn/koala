@@ -1,6 +1,7 @@
-set_project("Json")
+set_project("koala-lang")
 set_languages("c++17")
-set_warnings("all", "error")
+set_warnings("allextra")
+--set_warnings("all", "error")
 
 -- set_config("cxxflags", "-Wno-attributes")
 set_config("cc", "clang")
