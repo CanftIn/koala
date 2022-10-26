@@ -138,6 +138,16 @@ namespace koala {
       }
     };
   } // namespace detail
+
+  template <typename T>
+  constexpr TypeInfo user_type(const T&) noexcept {
+    return detail::GetTypeInfo<T>::get();
+  }
+
+  template <typename T>
+  constexpr TypeInfo user_type() noexcept {
+    return detail::GetTypeInfo<T>::get();
+  }
 } // namespace koala
 
 #endif

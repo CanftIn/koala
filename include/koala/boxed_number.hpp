@@ -20,18 +20,43 @@ namespace koala
   class BoxedNumber {
    private:
     enum class CommonTypes {
-      TUINT8,
-      TUINT16,
-      TUINT32,
-      TUINT64,
-      TINT8,
-      TINT16,
-      TINT32,
-      TINT64,
-      TDOUBLE,
-      TFLOAT
+      T_UINT8,
+      T_UINT16,
+      T_UINT32,
+      T_UINT64,
+      T_INT8,
+      T_INT16,
+      T_INT32,
+      T_INT64,
+      T_DOUBLE,
+      T_FLOAT,
+      T_LONGDOUBLE
     };
     
+    constexpr static CommonTypes get_common_type(size_t t_size, bool t_signed) noexcept {
+      return (t_size == 1 && t_signed) ? (CommonTypes::T_INT8)
+          : (t_size == 1)              ? (CommonTypes::T_UINT8)
+          : (t_size == 2 && t_signed)  ? (CommonTypes::T_INT16)
+          : (t_size == 2)              ? (CommonTypes::T_UINT16)
+          : (t_size == 4 && t_signed)  ? (CommonTypes::T_INT32)
+          : (t_size == 4)              ? (CommonTypes::T_UINT32)
+          : (t_size == 8 && t_signed)  ? (CommonTypes::T_INT64)
+                                       : (CommonTypes::T_UINT64);
+    }
+
+    static CommonTypes get_common_type(const BoxedValue& t_bv) {
+      const TypeInfo& in_ti_ = t_bv.get_type_info();
+
+      if (in_ti_ == user_type<int>()) {
+        return get_common_type(sizeof(int), true);
+      } else if (in_ti_ == user_type<double>()) {
+        return CommonTypes::T_DOUBLE;
+      } else if (in_ti_ == user_type<long double>()) {
+        return CommonTypes::T_LONGDOUBLE;
+      } else if (in_ti_ == user_type<float>()) {
+        return CommonTypes::T_FLOAT;
+      }
+    }
   };
 } // namespace koala
 
