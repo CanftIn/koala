@@ -44,19 +44,19 @@ namespace koala
                                        : (CommonTypes::T_UINT64);
     }
 
-    static CommonTypes get_common_type(const BoxedValue& t_bv) {
-      const TypeInfo& in_ti_ = t_bv.get_type_info();
-
-      if (in_ti_ == user_type<int>()) {
-        return get_common_type(sizeof(int), true);
-      } else if (in_ti_ == user_type<double>()) {
-        return CommonTypes::T_DOUBLE;
-      } else if (in_ti_ == user_type<long double>()) {
-        return CommonTypes::T_LONGDOUBLE;
-      } else if (in_ti_ == user_type<float>()) {
-        return CommonTypes::T_FLOAT;
-      }
-    }
+    //static CommonTypes get_common_type(const BoxedValue& t_bv) {
+    //  const TypeInfo& in_ti_ = t_bv.get_type_info();
+//
+    //  if (in_ti_ == user_type<int>()) {
+    //    return get_common_type(sizeof(int), true);
+    //  } else if (in_ti_ == user_type<double>()) {
+    //    return CommonTypes::T_DOUBLE;
+    //  } else if (in_ti_ == user_type<long double>()) {
+    //    return CommonTypes::T_LONGDOUBLE;
+    //  } else if (in_ti_ == user_type<float>()) {
+    //    return CommonTypes::T_FLOAT;
+    //  }
+    //}
   };
 } // namespace koala
 
