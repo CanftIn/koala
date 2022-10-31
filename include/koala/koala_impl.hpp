@@ -112,6 +112,8 @@ namespace koala
     std::vector<std::pair<BoxedValue, std::string>> _globals;
     std::vector<std::string> _evals;
   };
+
+  using ModulePtr = std::shared_ptr<Module>;
 } // namespace koala
 
 #endif
