@@ -127,6 +127,45 @@ namespace koala
     return v;
   }
 
+
+  namespace detail
+  {
+    template<typename T>
+    BoxedValue const_var_impl(const T &t) {
+      return BoxedValue(std::make_shared<typename std::add_const<T>::type>(t));
+    }
+
+    template<typename T>
+    BoxedValue const_var_impl(T *t) {
+      return BoxedValue(const_cast<typename std::add_const<T>::type *>(t));
+    }
+
+    template<typename T>
+    BoxedValue const_var_impl(const std::shared_ptr<T> &t) {
+      return BoxedValue(std::const_pointer_cast<typename std::add_const<T>::type>(t));
+    }
+
+    template<typename T>
+    BoxedValue const_var_impl(const std::reference_wrapper<T> &t) {
+      return BoxedValue(std::cref(t.get()));
+    }
+  } // namespace detail
+  
+  template<typename T>
+  BoxedValue const_var(const T &t) {
+    return detail::const_var_impl(t);
+  }
+
+  inline BoxedValue const_var(bool b) {
+    static const auto t = detail::const_var_impl(true);
+    static const auto f = detail::const_var_impl(false);
+
+    if (b) {
+      return t;
+    } else {
+      return f;
+    }
+  }
 } // namespace koala
 
 #endif

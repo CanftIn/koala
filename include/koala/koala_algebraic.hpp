@@ -10,9 +10,9 @@
 #ifndef KOALA_ALGEBRAIC_HPP_
 #define KOALA_ALGEBRAIC_HPP_
 
-#include "utility.hpp"
-
 #include <string>
+
+#include "utility.hpp"
 
 namespace koala {
   struct Operators {
