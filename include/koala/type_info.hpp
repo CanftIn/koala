@@ -55,6 +55,14 @@ namespace koala {
       return !is_undef() && (*_type_info) == ti;
     }
 
+    constexpr bool bare_equal(const TypeInfo& ti) const noexcept {
+      return ti._type_info == _type_info || *ti._type_info == *_type_info;
+    }
+
+    constexpr bool bare_equal_type_info(const std::type_info& ti) const noexcept {
+      return !is_undef() && (*_bare_type_info) == ti;
+    }
+
     constexpr bool is_const() const noexcept { return (_flags & (1 << is_const_flag)) != 0; }
     constexpr bool is_reference() const noexcept { return (_flags & (1 << is_reference_flag)) != 0; }
     constexpr bool is_void() const noexcept { return (_flags & (1 << is_void_flag)) != 0; }

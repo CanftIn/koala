@@ -101,7 +101,15 @@ namespace koala
 
     bool is_undef() const noexcept { return _data->_type_info.is_undef(); }
     bool is_const() const noexcept { return _data->_type_info.is_const(); }
-
+    bool is_type(const TypeInfo& ti) const noexcept { return _data->_type_info.bare_equal(ti); }
+    bool is_null() const noexcept { return (_data->_data_ptr == nullptr && _data->_const_data_ptr == nullptr); }
+    const std::any& get() const noexcept { return _data->_obj; }
+    bool is_ref() const noexcept { return _data->_is_ref; }
+    bool is_return_value() const noexcept { return _data->_return_value; }
+    void reset_return_value() const noexcept { _data->_return_value = false; }
+    bool is_pointer() const noexcept { return !is_ref(); }
+    void *get_ptr() const noexcept { return _data->_data_ptr; }
+    const void *get_const_ptr() const noexcept { return _data->_const_data_ptr; }
 
    private:
     std::shared_ptr<Data> _data = ObjectData::get();
