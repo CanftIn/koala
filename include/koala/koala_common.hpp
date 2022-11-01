@@ -237,6 +237,154 @@ TOK_MATCH(tk_upper_class,       "__CLASS__")
       }
     }
   };
+
+  struct FilePosition {
+    constexpr FilePosition(int t_file_line, int t_file_column) noexcept
+      : line(t_file_line),
+        column(t_file_column)
+    { }
+
+    constexpr FilePosition() noexcept = default;
+
+    int line = 0;
+    int column = 0;
+  };
+
+  struct ParseLocation {
+    ParseLocation(std::string t_fname = "", const int t_start_line = 0,
+                  const int t_start_col = 0, const int t_end_line = 0,
+                  const int t_end_col = 0)
+      : start(t_start_line, t_start_col),
+        end(t_end_line, t_end_col),
+        filename(std::make_shared<std::string>(std::move(t_fname)))
+    { }
+
+    ParseLocation(std::shared_ptr<std::string> t_fname,
+                  const int t_start_line = 0,
+                  const int t_start_col = 0,
+                  const int t_end_line = 0,
+                  const int t_end_col = 0)
+      : start(t_start_line, t_start_col),
+        end(t_end_line, t_end_col),
+        filename(std::move(t_fname))
+    { }
+
+    FilePosition start;
+    FilePosition end;
+    std::shared_ptr<std::string> filename;
+  };
+
+  struct AstNode {
+   public:
+    const AstNodeType identifier;
+    const std::string text;
+    ParseLocation location;
+
+    const std::string& filename() const noexcept { return *location.filename; }
+    const FilePosition& start() const noexcept { return location.start; }
+    const FilePosition& end() const noexcept { return location.end; }
+
+    std::string pretty_print() const {
+      std::ostringstream oss;
+      oss << text;
+
+      for (auto &elem : get_children()) {
+        oss << elem.get().pretty_print() << ' ';
+      }
+
+      return oss.str();
+    }
+
+    virtual std::vector<std::reference_wrapper<AstNode>> get_children() const = 0;
+    
+    std::string to_string(const std::string& t_prepend = "") const {
+      std::ostringstream oss;
+
+      oss << t_prepend << "(" << get_node_type_name(this->identifier) << ") " << this->text << " : " << this->location.start.line
+          << ", " << this->location.start.column << '\n';
+
+      for (auto &elem : get_children()) {
+        oss << elem.get().to_string(t_prepend + "  ");
+      }
+      return oss.str();
+    }
+
+    virtual ~AstNode() noexcept = default;
+    AstNode(AstNode&&) = default;
+    AstNode &operator=(AstNode&&) = delete;
+    AstNode(const AstNode&) = delete;
+    AstNode &operator=(const AstNode&) = delete;
+
+   protected:
+    AstNode(std::string t_ast_node_text, AstNodeType t_id, ParseLocation t_loc)
+      : identifier(t_id),
+        text(std::move(t_ast_node_text)),
+        location(std::move(t_loc))
+    { }
+  };
+
+  using AstNodePtr = std::unique_ptr<AstNode>;
+  using AstNodePtrConst = std::unique_ptr<const AstNode>;
+
+  struct AstNodeTrace {
+    const AstNodeType identifier;
+    const std::string text;
+    ParseLocation location;
+
+    const std::string& filename() const noexcept { return *location.filename; }
+
+    const FilePosition& start() const noexcept { return location.start; }
+
+    const FilePosition& end() const noexcept { return location.end; }
+
+    std::string pretty_print() const {
+      std::ostringstream oss;
+      oss << text;
+
+      for (const auto& elem : children) {
+        oss << elem.pretty_print() << ' ';
+      }
+
+      return oss.str();
+    }
+
+    std::vector<AstNodeTrace> get_children(const AstNode& node) {
+      const auto node_children = node.get_children();
+      return std::vector<AstNodeTrace>(node_children.begin(), node_children.end());
+    }
+
+    AstNodeTrace(const AstNode& node)
+        : identifier(node.identifier),
+          text(node.text),
+          location(node.location),
+          children(get_children(node))
+    { }
+
+    std::vector<AstNodeTrace> children;
+  };
+
+  namespace parser
+  {
+    class KoalaParserBase {
+     public:
+      virtual AstNodePtr parse(const std::string& t_input, const std::string& t_fname) = 0;
+      virtual void debug_print(const AstNode& t, std::string prepend = "") const = 0;
+      virtual void *get_tracer_ptr() = 0;
+      virtual ~KoalaParserBase() = default;
+      KoalaParserBase() = default;
+      KoalaParserBase(KoalaParserBase&&) = default;
+      KoalaParserBase& operator = (KoalaParserBase&&) = delete;
+      KoalaParserBase& operator = (const KoalaParserBase&&) = delete;
+
+      template<typename T>
+      T& get_tracer() noexcept {
+        return *static_cast<T *>(get_tracer_ptr());
+      }
+
+     protected:
+      KoalaParserBase(const KoalaParserBase&) = default;
+    };
+  } // namespace parser
   
 } // namespace koala
 
