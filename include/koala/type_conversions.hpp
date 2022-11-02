@@ -267,7 +267,7 @@ namespace koala
     struct CastHelperInner<const std::reference_wrapper<const Result> &> : CastHelperInner<const Result &> {
     };
 
-    /// The exposed Cast_Helper object that by default just calls the CastHelperInner
+    /// The exposed CastHelper object that by default just calls the CastHelperInner
     template<typename T>
     struct CastHelper {
       static decltype(auto) cast(const BoxedValue &ob, const TypeConversionsState *t_conversions) {
@@ -280,7 +280,7 @@ namespace koala
 
 
 
-    class TypeConvertionBase {
+    class TypeConversionBase {
      public:
       virtual BoxedValue convert(const BoxedValue& from) const = 0;
       virtual BoxedValue convert_down(const BoxedValue& to) const = 0;
@@ -290,10 +290,10 @@ namespace koala
 
       virtual bool bidir() const noexcept { return true; }
 
-      virtual ~TypeConvertionBase() = default;
+      virtual ~TypeConversionBase() = default;
 
      protected:
-      TypeConvertionBase(TypeInfo t_to, TypeInfo t_from)
+      TypeConversionBase(TypeInfo t_to, TypeInfo t_from)
         : _to(std::move(t_to)),
           _from(std::move(t_from))
       { }
@@ -303,48 +303,315 @@ namespace koala
       const TypeInfo _from;
     };
 
-    //template <typename From, typename To>
-    //class StaticCaster {
-    // public:
-    //  static BoxedValue cast(const BoxedValue& t_from) {
-    //    if (t_from.get_type_info().bare_equal(koala::user_type<From>())) {
-    //      if (t_from.is_pointer()) {
-//
-    //      } else {
-    //        if (t_from.is_const()) {
-    //          const From& d = 
-    //        }
-    //      }
-    //    }
-    //  }
-    //};
+    template<typename From, typename To>
+    class Static_Caster {
+    public:
+      static BoxedValue cast(const BoxedValue &t_from) {
+        if (t_from.get_type_info().bare_equal(koala::user_type<From>())) {
+          if (t_from.is_pointer()) {
+            if (t_from.is_const()) {
+              return BoxedValue([&]() {
+                if (auto data
+                    = std::static_pointer_cast<const To>(detail::CastHelper<std::shared_ptr<const From>>::cast(t_from, nullptr))) {
+                  return data;
+                } else {
+                  throw std::bad_cast();
+                }
+              }());
+            } else {
+              return BoxedValue([&]() {
+                if (auto data = std::static_pointer_cast<To>(detail::CastHelper<std::shared_ptr<From>>::cast(t_from, nullptr))) {
+                  return data;
+                } else {
+                  throw std::bad_cast();
+                }
+              }());
+            }
+          } else {
+            if (t_from.is_const()) {
+              const From &d = detail::CastHelper<const From &>::cast(t_from, nullptr);
+              const To &data = static_cast<const To &>(d);
+              return BoxedValue(std::cref(data));
+            } else {
+              From &d = detail::CastHelper<From &>::cast(t_from, nullptr);
+              To &data = static_cast<To &>(d);
+              return BoxedValue(std::ref(data));
+            }
+          }
+        }
+      }
+    };
+
+    template<typename From, typename To>
+    class Dynamic_Caster {
+    public:
+      static BoxedValue cast(const BoxedValue &t_from) {
+        if (t_from.get_type_info().bare_equal(koala::user_type<From>())) {
+          if (t_from.is_pointer()) {
+            if (t_from.is_const()) {
+              return BoxedValue([&]() {
+                if (auto data
+                    = std::dynamic_pointer_cast<const To>(detail::CastHelper<std::shared_ptr<const From>>::cast(t_from, nullptr))) {
+                  return data;
+                } else {
+                  throw std::bad_cast();
+                }
+              }());
+            } else {
+              return BoxedValue([&]() {
+                if (auto data = std::dynamic_pointer_cast<To>(detail::CastHelper<std::shared_ptr<From>>::cast(t_from, nullptr))) {
+                  return data;
+                } else {
+                  throw std::bad_cast();
+                }
+              }());
+            }
+          } else {
+            if (t_from.is_const()) {
+              const From &d = detail::CastHelper<const From &>::cast(t_from, nullptr);
+              const To &data = dynamic_cast<const To &>(d);
+              return BoxedValue(std::cref(data));
+            } else {
+              From &d = detail::CastHelper<From &>::cast(t_from, nullptr);
+              To &data = dynamic_cast<To &>(d);
+              return BoxedValue(std::ref(data));
+            }
+          }
+        }
+      }
+    };
+
+    template<typename Base, typename Derived>
+    class DynamicConversionImpl : public TypeConversionBase {
+    public:
+      DynamicConversionImpl()
+          : TypeConversionBase(koala::user_type<Base>(), koala::user_type<Derived>()) {
+      }
+
+      BoxedValue convert_down(const BoxedValue &t_base) const override { return Dynamic_Caster<Base, Derived>::cast(t_base); }
+
+      BoxedValue convert(const BoxedValue &t_derived) const override { return Static_Caster<Derived, Base>::cast(t_derived); }
+    };
+
+    template<typename Base, typename Derived>
+    class StaticConversionImpl : public TypeConversionBase {
+    public:
+      StaticConversionImpl()
+          : TypeConversionBase(koala::user_type<Base>(), koala::user_type<Derived>()) {
+      }
+
+      BoxedValue convert_down(const BoxedValue &t_base) const override {
+      }
+
+      bool bidir() const noexcept override { return false; }
+
+      BoxedValue convert(const BoxedValue &t_derived) const override { return Static_Caster<Derived, Base>::cast(t_derived); }
+    };
+
+    template<typename Callable>
+    class Type_Conversion_Impl : public TypeConversionBase {
+    public:
+      Type_Conversion_Impl(TypeInfo t_from, TypeInfo t_to, Callable t_func)
+          : TypeConversionBase(t_to, t_from)
+          , m_func(std::move(t_func)) {
+      }
+
+      BoxedValue convert_down(const BoxedValue &) const override {
+      }
+
+      BoxedValue convert(const BoxedValue &t_from) const override {
+        return m_func(t_from);
+      }
+
+      bool bidir() const noexcept override { return false; }
+
+    private:
+      Callable m_func;
+    };
   } // namespace detail
+
+  class Type_Conversions {
+  public:
+    struct Conversion_Saves {
+      bool enabled = false;
+      std::vector<BoxedValue> saves;
+    };
+
+    struct Less_Than {
+      bool operator()(const std::type_info *t_lhs, const std::type_info *t_rhs) const noexcept {
+        return *t_lhs != *t_rhs && t_lhs->before(*t_rhs);
+      }
+    };
+
+    Type_Conversions()
+        : m_conversions()
+        , m_convertableTypes()
+        , m_num_types(0) {
+    }
+
+    Type_Conversions(const Type_Conversions &t_other) = delete;
+    Type_Conversions(Type_Conversions &&) = delete;
+
+    Type_Conversions &operator=(const Type_Conversions &) = delete;
+    Type_Conversions &operator=(Type_Conversions &&) = delete;
+
+    const std::set<const std::type_info *, Less_Than> &thread_cache() const {
+      auto cache = m_thread_cache;
+      if (cache.size() != m_num_types) {
+        cache = m_convertableTypes;
+      }
+
+      return cache;
+    }
+
+    void add_conversion(const std::shared_ptr<detail::TypeConversionBase> &conversion) {
+      if (find_bidir(conversion->to(), conversion->from()) != m_conversions.end()) {
+      }
+      m_conversions.insert(conversion);
+      m_convertableTypes.insert({conversion->to().bare_type_info(), conversion->from().bare_type_info()});
+      m_num_types = m_convertableTypes.size();
+    }
+
+    template<typename T>
+    bool convertable_type() const noexcept {
+      const auto type = user_type<T>().bare_type_info();
+      return thread_cache().count(type) != 0;
+    }
+
+    template<typename To, typename From>
+    bool converts() const noexcept {
+      return converts(user_type<To>(), user_type<From>());
+    }
+
+    bool converts(const TypeInfo &to, const TypeInfo &from) const noexcept {
+      const auto &types = thread_cache();
+      if (types.count(to.bare_type_info()) != 0 && types.count(from.bare_type_info()) != 0) {
+        return has_conversion(to, from);
+      } else {
+        return false;
+      }
+    }
+
+    template<typename To>
+    BoxedValue boxed_type_conversion(Conversion_Saves &t_saves, const BoxedValue &from) const {
+      return boxed_type_conversion(user_type<To>(), t_saves, from);
+    }
+
+    template<typename From>
+    BoxedValue boxed_type_down_conversion(Conversion_Saves &t_saves, const BoxedValue &to) const {
+      return boxed_type_down_conversion(user_type<From>(), t_saves, to);
+    }
+
+    BoxedValue boxed_type_conversion(const TypeInfo &to, Conversion_Saves &t_saves, const BoxedValue &from) const {
+      try {
+        BoxedValue ret = get_conversion(to, from.get_type_info())->convert(from);
+        if (t_saves.enabled) {
+          t_saves.saves.push_back(ret);
+        }
+        return ret;
+      } catch (const std::out_of_range &) {
+      } catch (const std::bad_cast &) {}
+    }
+
+    BoxedValue boxed_type_down_conversion(const TypeInfo &from, Conversion_Saves &t_saves, const BoxedValue &to) const {
+      try {
+        BoxedValue ret = get_conversion(to.get_type_info(), from)->convert_down(to);
+        if (t_saves.enabled) {
+          t_saves.saves.push_back(ret);
+        }
+        return ret;
+      } catch (const std::out_of_range &) {
+      } catch (const std::bad_cast &) {
+      }
+    }
+
+    static void enable_conversion_saves(Conversion_Saves &t_saves, bool t_val) { t_saves.enabled = t_val; }
+
+    std::vector<BoxedValue> take_saves(Conversion_Saves &t_saves) {
+      std::vector<BoxedValue> ret;
+      std::swap(ret, t_saves.saves);
+      return ret;
+    }
+
+    bool has_conversion(const TypeInfo &to, const TypeInfo &from) const {
+      return find_bidir(to, from) != m_conversions.end();
+    }
+
+    std::shared_ptr<detail::TypeConversionBase> get_conversion(const TypeInfo &to, const TypeInfo &from) const {
+
+      const auto itr = find(to, from);
+
+      if (itr != m_conversions.end()) {
+        return *itr;
+      } else {
+        throw std::out_of_range(std::string("No such conversion exists from ") + from.bare_name() + " to " + to.bare_name());
+      }
+    }
+
+  private:
+    std::set<std::shared_ptr<detail::TypeConversionBase>>::const_iterator find_bidir(const TypeInfo &to, const TypeInfo &from) const {
+      return std::find_if(m_conversions.begin(),
+                          m_conversions.end(),
+                          [&to, &from](const std::shared_ptr<detail::TypeConversionBase> &conversion) -> bool {
+                            return (conversion->to().bare_equal(to) && conversion->from().bare_equal(from))
+                                || (conversion->bidir() && conversion->from().bare_equal(to) && conversion->to().bare_equal(from));
+                          });
+    }
+
+    std::set<std::shared_ptr<detail::TypeConversionBase>>::const_iterator find(const TypeInfo &to, const TypeInfo &from) const {
+      return std::find_if(m_conversions.begin(),
+                          m_conversions.end(),
+                          [&to, &from](const std::shared_ptr<detail::TypeConversionBase> &conversion) {
+                            return conversion->to().bare_equal(to) && conversion->from().bare_equal(from);
+                          });
+    }
+
+    std::set<std::shared_ptr<detail::TypeConversionBase>> get_conversions() const {
+
+      return m_conversions;
+    }
+
+    std::set<std::shared_ptr<detail::TypeConversionBase>> m_conversions;
+    std::set<const std::type_info *, Less_Than> m_convertableTypes;
+    std::atomic_size_t m_num_types;
+    std::set<const std::type_info *, Less_Than> m_thread_cache;
+  };
+
+  class TypeConversionsState {
+  public:
+    TypeConversionsState(const Type_Conversions &t_conversions, Type_Conversions::Conversion_Saves &t_saves)
+        : m_conversions(t_conversions)
+        , m_saves(t_saves) {
+    }
+
+    const Type_Conversions *operator->() const noexcept { return &m_conversions.get(); }
+
+    const Type_Conversions *get() const noexcept { return &m_conversions.get(); }
+
+    Type_Conversions::Conversion_Saves &saves() const noexcept { return m_saves; }
+
+  private:
+    std::reference_wrapper<const Type_Conversions> m_conversions;
+    std::reference_wrapper<Type_Conversions::Conversion_Saves> m_saves;
+  };
   
   template<typename Type>
   decltype(auto) boxed_cast(const BoxedValue &bv, const TypeConversionsState *t_conversions = nullptr) {
-    //if (!t_conversions || bv.get_type_info().bare_equal(user_type<Type>()) || (t_conversions && !(*t_conversions)->convertable_type<Type>())) {
-    //  try {
-    //    return detail::CastHelper<Type>::cast(bv, t_conversions);
-    //  } catch (const koala::exception::bad_any_cast &) {
-    //  }
-    //}
-//
-    //if (t_conversions && (*t_conversions)->convertable_type<Type>()) {
-    //  try {
-    //    return (detail::CastHelper<Type>::cast((*t_conversions)->boxed_type_conversion<Type>(t_conversions->saves(), bv), t_conversions));
-    //  } catch (...) {
-    //    try {
-    //      // try going the other way
-    //      return (detail::CastHelper<Type>::cast((*t_conversions)->boxed_type_down_conversion<Type>(t_conversions->saves(), bv),
-    //                                              t_conversions));
-    //    } catch (const koala::exception::bad_any_cast &) {
-    //      throw exception::bad_boxed_cast(bv.get_type_info(), typeid(Type));
-    //    }
-    //  }
-    //} else {
-    //  throw exception::bad_boxed_cast(bv.get_type_info(), typeid(Type));
-    //}
-    return detail::CastHelper<Type>::cast(BoxedValue(), nullptr);
+    if (!t_conversions || bv.get_type_info().bare_equal(user_type<Type>()) || (t_conversions && !(*t_conversions)->convertable_type<Type>())) {
+      return detail::CastHelper<Type>::cast(bv, t_conversions);
+    }
+
+    if (t_conversions && (*t_conversions)->convertable_type<Type>()) {
+      try {
+        return (detail::CastHelper<Type>::cast((*t_conversions)->boxed_type_conversion<Type>(t_conversions->saves(), bv), t_conversions));
+      } catch (...) {
+        return (detail::CastHelper<Type>::cast((*t_conversions)->boxed_type_down_conversion<Type>(t_conversions->saves(), bv),
+                                                t_conversions));
+      }
+    } else {
+      throw exception::bad_boxed_cast(bv.get_type_info(), typeid(Type));
+    }
+    //return detail::CastHelper<Type>::cast(BoxedValue(), nullptr);
   }
   
 } // namespace koala

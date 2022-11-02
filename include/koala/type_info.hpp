@@ -86,6 +86,8 @@ namespace koala {
       }
     }
 
+    constexpr const std::type_info *bare_type_info() const noexcept { return _bare_type_info; }
+
    private:
     struct UnknownType {};
     [[maybe_unused]] const std::type_info* _type_info = &typeid(UnknownType);
