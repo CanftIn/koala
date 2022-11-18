@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/workspace/koala/build_cmake",
+  "command": "/usr/bin/c++ -Dkoala_EXPORTS -I/workspace/koala/include -I/workspace/koala/experimental -std=gnu++17 -o CMakeFiles/koala.dir/src/koala.cc.o -c /workspace/koala/src/koala.cc",
+  "file": "/workspace/koala/src/koala.cc"
+}
+]
